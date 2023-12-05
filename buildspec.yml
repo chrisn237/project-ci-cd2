@@ -3,6 +3,9 @@ phases:
   post_build:
     commands:
       - zip -r site.zip ./project/*
+      - echo "Build success"
+      - ls
+      - dir
 artifacts:
   files:
     - appspec.yml
