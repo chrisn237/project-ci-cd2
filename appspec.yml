@@ -1,10 +1,8 @@
 version: 0.0
 os: linux
 files:
-  - source: /project
-    destination: /home/ec2-user/
-  - source: ./scripts/app-supvinci.service
-    destination: /etc/systemd/system/
+  - source: site.zip
+    destination: /home/ec2-user/site.zip
 hooks:
   BeforeInstall:
     - location: scripts/install_dependencies
