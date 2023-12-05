@@ -3,5 +3,4 @@
 cd /home/ec2-user
 pwd
 ls
-unzip site.zip
 pip3 install -r /home/ec2-user/requirements.txt
