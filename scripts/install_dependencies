@@ -3,7 +3,6 @@
 
 yum update
 yum install -y python3 python3-pip unzip
-cd /home/ec2-user
 ls
-unzip -o site.zip -d /home/ec2-user
+unzip -o /site.zip -d /home/ec2-user
 pip3 install -r /home/ec2-user/requirements.txt
