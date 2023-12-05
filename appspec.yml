@@ -1,8 +1,8 @@
 version: 0.0
 os: linux
 files:
-  - source: site.zip
-    destination: /home/ec2-user/
+  - source: \
+    destination: /home/ec2-user
 hooks:
   BeforeInstall:
     - location: scripts/install_dependencies
