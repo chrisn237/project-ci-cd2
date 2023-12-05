@@ -3,6 +3,8 @@ os: linux
 files:
   - source: /
     destination: /home/ec2-user
+  - source: /scripts/app-supvinci.service
+    destination: /etc/systemd/system
 hooks:
   AfterInstall:
     - location: scripts/after_install
