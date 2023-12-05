@@ -4,6 +4,10 @@ files:
   - source: /project/app.py
     destination: /home/ec2-user
 hooks:
+  AfterInstall:
+    - location: scripts/test
+      timeout: 300
+      runas: root
   BeforeInstall:
     - location: scripts/install_dependencies
       timeout: 300
