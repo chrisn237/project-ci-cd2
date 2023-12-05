@@ -8,11 +8,11 @@ hooks:
     - location: scripts/test
       timeout: 300
       runas: root
-  BeforeInstall:
-    - location: scripts/install_dependencies
+    - location: scripts/start_server
       timeout: 300
       runas: root
-    - location: scripts/start_server
+  BeforeInstall:
+    - location: scripts/install_dependencies
       timeout: 300
       runas: root
   ApplicationStop:
