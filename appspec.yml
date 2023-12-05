@@ -1,7 +1,7 @@
 version: 0.0
 os: linux
 files:
-  - source: \
+  - source: /project/app.py
     destination: /home/ec2-user
 hooks:
   BeforeInstall:
