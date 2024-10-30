@@ -21,8 +21,10 @@ jobs:
 
       - name: Replace database.ini placeholders with environment variables
         run: |
+          pwd
           sed -i "s/__DB_HOST__/$DB_HOST/g" project/db/resources/database.ini
           sed -i "s/__DB_PORT__/$DB_PORT/g" project/db/resources/database.ini
           sed -i "s/__DB_USER__/$DB_USER/g" project/db/resources/database.ini
           sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/g" project/db/resources/database.ini
           sed -i "s/__DB_NAME__/$DB_NAME/g" project/db/resources/database.ini
+
