@@ -26,15 +26,3 @@ jobs:
           sed -i "s/__DB_USER__/$DB_USER/g" project/db/resources/database.ini
           sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/g" project/db/resources/database.ini
           sed -i "s/__DB_NAME__/$DB_NAME/g" project/db/resources/database.ini
-
-      - name: Build Docker image
-        run: |
-          docker build -t yourdockerimage:latest .
-
-      - name: Push Docker image to Docker Hub
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: |
-          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-          docker push yourdockerimage:latest
