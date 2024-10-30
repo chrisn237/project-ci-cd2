@@ -1,0 +1,40 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Replace database.ini placeholders with environment variables
+        run: |
+          sed -i "s/__DB_HOST__/$DB_HOST/" database.ini
+          sed -i "s/__DB_PORT__/$DB_PORT/" database.ini
+          sed -i "s/__DB_USER__/$DB_USER/" database.ini
+          sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/" database.ini
+          sed -i "s/__DB_NAME__/$DB_NAME/" database.ini
+
+      - name: Build Docker image
+        run: |
+          docker build -t yourdockerimage:latest .
+
+      - name: Push Docker image to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+          docker push yourdockerimage:latest
