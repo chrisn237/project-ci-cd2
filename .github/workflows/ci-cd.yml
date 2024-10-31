@@ -65,6 +65,6 @@ jobs:
               -e DB_USER=\$LC_DB_USER \
               -e DB_PASSWORD=\$LC_DB_PASSWORD \
               -e DB_NAME=\$LC_DB_NAME \
-              -p 80:8088 \
+              -p 8088:8088 \
               $DOCKER_USERNAME/apptest1:latest
-          EOF
+          EOF 
