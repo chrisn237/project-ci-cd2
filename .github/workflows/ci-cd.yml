@@ -36,25 +36,17 @@ jobs:
           sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/g" project/db/resources/database.ini
           sed -i "s/__DB_NAME__/$DB_NAME/g" project/db/resources/database.ini
 
-      # Étape 4 : Construction de l'image Docker avec le nom d'utilisateur Docker Hub
-      - name: Build Docker image
+      # Étape 3 : Construction et Push de l'image Docker
+      - name: Build and Push Docker image
         run: |
           docker build -t $DOCKER_USERNAME/apptest1:latest .
-
-      # Étape 5 : Connexion à Docker Hub
-      - name: Log in to Docker Hub
-        run: |
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-
-      # Étape 6 : Pousser l'image Docker vers Docker Hub
-      - name: Push Docker image to Docker Hub
-        run: |
           docker push $DOCKER_USERNAME/apptest1:latest
 
-      # Étape 7 : Déploiement sur la VM de staging
+      # Étape 4 : Déploiement sur la VM de staging
       - name: Deploy to Staging VM 
         run: |
-          # Exportation des variables d'environnement avec le préfixe LC_
+          # Exportation des variables d'environnement pour SSH
           export LC_DB_HOST=$DB_HOST
           export LC_DB_PORT=$DB_PORT
           export LC_DB_USER=$DB_USER
@@ -62,18 +54,17 @@ jobs:
           export LC_DB_NAME=$DB_NAME
           export LC_DOCKER_USERNAME=$DOCKER_USERNAME
           
-          # Envoi des variables avec SSH et exécution de commandes sur la VM
-          sshpass -p "$STAGING_VM_PASSWORD" ssh \
-            
-            -o StrictHostKeyChecking=no \
-            $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
-            
-            # Tirer l'image Docker, arrêter l'ancien conteneur, et démarrer un nouveau conteneur
+          # Exécution du script de déploiement sur la VM
+          sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << EOF
             docker pull $DOCKER_USERNAME/apptest1:latest
             docker stop staging-container || true
             docker rm staging-container || true
             docker run -d --name staging-container \
-             
+              -e DB_HOST=\$LC_DB_HOST \
+              -e DB_PORT=\$LC_DB_PORT \
+              -e DB_USER=\$LC_DB_USER \
+              -e DB_PASSWORD=\$LC_DB_PASSWORD \
+              -e DB_NAME=\$LC_DB_NAME \
               -p 80:8088 \
               $DOCKER_USERNAME/apptest1:latest
           EOF
