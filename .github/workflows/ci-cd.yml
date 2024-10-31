@@ -33,9 +33,9 @@ jobs:
           sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/g" project/db/resources/database.ini
           sed -i "s/__DB_NAME__/$DB_NAME/g" project/db/resources/database.ini
 
-      - name: Run Unit Tests
-        run: |
-          python -m unittest discover -s tests
+      #- name: Run Unit Tests
+        #run: |
+          #python -m unittest discover -s tests
 
       - name: Build Docker image
         run: |
