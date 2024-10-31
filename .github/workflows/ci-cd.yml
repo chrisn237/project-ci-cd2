@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Variables d'environnement pour la base de données et Docker
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PORT: ${{ secrets.DB_PORT }}
       DB_USER: ${{ secrets.DB_USER }}
@@ -22,9 +23,11 @@ jobs:
       STAGING_VM_PASSWORD: ${{ secrets.STAGING_VM_PASSWORD }}
 
     steps:
+      # Étape 1 : Récupération du code source
       - name: Checkout code
         uses: actions/checkout@v2
 
+      # Étape 2 : Remplacement des placeholders dans database.ini avec les variables d'environnement
       - name: Replace database.ini placeholders with environment variables
         run: |
           sed -i "s/__DB_HOST__/$DB_HOST/g" project/db/resources/database.ini
@@ -33,35 +36,39 @@ jobs:
           sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/g" project/db/resources/database.ini
           sed -i "s/__DB_NAME__/$DB_NAME/g" project/db/resources/database.ini
 
+      # Étape 3 (optionnelle) : Exécution des tests unitaires
       #- name: Run Unit Tests
         #run: |
           #python -m unittest discover -s tests
 
+      # Étape 4 : Construction de l'image Docker avec le nom d'utilisateur Docker Hub
       - name: Build Docker image
         run: |
           docker build -t $DOCKER_USERNAME/apptest1:latest .
 
+      # Étape 5 : Connexion à Docker Hub
       - name: Log in to Docker Hub
         run: |
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
 
+      # Étape 6 : Pousser l'image Docker vers Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
           docker push $DOCKER_USERNAME/apptest1:latest
 
-          - name: Deploy to Staging VM
-          run: |
-            sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
-              docker pull $DOCKER_USERNAME/apptest1:latest
-              docker stop staging-container || true
-              docker rm staging-container || true
-              docker run -d --name staging-container \
-                -e DB_HOST=$DB_HOST \
-                -e DB_PORT=$DB_PORT \
-                -e DB_USER=$DB_USER \
-                -e DB_PASSWORD=$DB_PASSWORD \
-                -e DB_NAME=$DB_NAME \
-                -p 80:8088 \
-                $DOCKER_USERNAME/apptest1:latest
-            EOF
-        
+      # Étape 7 : Déploiement sur la VM de staging
+      - name: Deploy to Staging VM
+        run: |
+          sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
+            docker pull $DOCKER_USERNAME/apptest1:latest
+            docker stop staging-container || true
+            docker rm staging-container || true
+            docker run -d --name staging-container \
+              -e DB_HOST=$DB_HOST \
+              -e DB_PORT=$DB_PORT \
+              -e DB_USER=$DB_USER \
+              -e DB_PASSWORD=$DB_PASSWORD \
+              -e DB_NAME=$DB_NAME \
+              -p 80:8088 \
+              $DOCKER_USERNAME/apptest1:latest
+          EOF
