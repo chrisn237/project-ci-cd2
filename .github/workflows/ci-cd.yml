@@ -1,19 +1,25 @@
-name: Build and Deploy
+name: CI/CD Pipeline for Staging Deployment
 
 on:
   push:
     branches:
-      - main
+      - main  # La pipeline s'exécute sur chaque push dans la branche `main`
 
 jobs:
-  build:
+  build_test_deploy:
     runs-on: ubuntu-latest
+
     env:
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PORT: ${{ secrets.DB_PORT }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_NAME: ${{ secrets.DB_NAME }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      STAGING_VM_IP: ${{ secrets.STAGING_VM_IP }}
+      STAGING_VM_USER: ${{ secrets.STAGING_VM_USER }}
+      STAGING_VM_PASSWORD: ${{ secrets.STAGING_VM_PASSWORD }}
 
     steps:
       - name: Checkout code
@@ -21,10 +27,40 @@ jobs:
 
       - name: Replace database.ini placeholders with environment variables
         run: |
-          pwd
           sed -i "s/__DB_HOST__/$DB_HOST/g" project/db/resources/database.ini
           sed -i "s/__DB_PORT__/$DB_PORT/g" project/db/resources/database.ini
           sed -i "s/__DB_USER__/$DB_USER/g" project/db/resources/database.ini
           sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/g" project/db/resources/database.ini
           sed -i "s/__DB_NAME__/$DB_NAME/g" project/db/resources/database.ini
 
+      - name: Run Unit Tests
+        run: |
+          python -m unittest discover -s tests
+
+      - name: Build Docker image
+        run: |
+          docker build -t $DOCKER_USERNAME/apptest1:latest .
+
+      - name: Log in to Docker Hub
+        run: |
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push $DOCKER_USERNAME/apptest1:latest
+
+      - name: Deploy to Staging VM
+        run: |
+          sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
+            docker pull $DOCKER_USERNAME/yourdockerimage:latest
+            docker stop staging-container || true
+            docker rm staging-container || true
+            docker run -d --name staging-container \
+              -e DB_HOST=$DB_HOST \
+              -e DB_PORT=$DB_PORT \
+              -e DB_USER=$DB_USER \
+              -e DB_PASSWORD=$DB_PASSWORD \
+              -e DB_NAME=$DB_NAME \
+              -p 80:8088 \
+              $DOCKER_USERNAME/apptest1:latest
+          EOF
