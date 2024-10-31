@@ -52,7 +52,7 @@ jobs:
       - name: Deploy to Staging VM
         run: |
           sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
-            docker pull $DOCKER_USERNAME/yourdockerimage:latest
+            docker pull $DOCKER_USERNAME/apptest1:latest
             docker stop staging-container || true
             docker rm staging-container || true
             docker run -d --name staging-container \
