@@ -44,7 +44,7 @@ jobs:
           docker push $DOCKER_USERNAME/apptest1:latest
 
       # Étape 4 : Déploiement sur la VM de staging
-      - name: Deploy to Staging VM 
+      - name: Deploy to Staging VM
         run: |
           # Exportation des variables d'environnement pour SSH
           export LC_DB_HOST=$DB_HOST
@@ -53,18 +53,18 @@ jobs:
           export LC_DB_PASSWORD=$DB_PASSWORD
           export LC_DB_NAME=$DB_NAME
           export LC_DOCKER_USERNAME=$DOCKER_USERNAME
-          
+
           # Exécution du script de déploiement sur la VM
-          sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << "EOF"
-            docker pull $DOCKER_USERNAME/apptest1:latest
+          sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << EOF
+            docker pull \$DOCKER_USERNAME/apptest1:latest
             docker stop staging-container || true
             docker rm staging-container || true
             docker run -d --name staging-container \
-              -e DB_HOST=$LC_DB_HOST \
-              -e DB_PORT=$LC_DB_PORT \
-              -e DB_USER=$LC_DB_USER \
-              -e DB_PASSWORD=$LC_DB_PASSWORD \
-              -e DB_NAME=$LC_DB_NAME \
+              -e DB_HOST=\$LC_DB_HOST \
+              -e DB_PORT=\$LC_DB_PORT \
+              -e DB_USER=\$LC_DB_USER \
+              -e DB_PASSWORD=\$LC_DB_PASSWORD \
+              -e DB_NAME=\$LC_DB_NAME \
               -p 8088:8088 \
-              $DOCKER_USERNAME/apptest1:latest
-            EOF
+              \$DOCKER_USERNAME/apptest1:latest
+          EOF
