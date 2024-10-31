@@ -7,7 +7,7 @@ WORKDIR /opt/application/flask
 
 RUN apt-get update
 RUN pip install -r requirements.txt
-ENV DATABASE_HOST postgres-db
+ENV DATABASE_HOST projettp5.postgres.database.azure.com
 EXPOSE 8088
 
 ENTRYPOINT ["gunicorn", "-b", ":8088"]
