@@ -49,18 +49,19 @@ jobs:
         run: |
           docker push $DOCKER_USERNAME/apptest1:latest
 
-      - name: Deploy to Staging VM
-        run: |
-          sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
-            docker pull $DOCKER_USERNAME/apptest1:latest
-            docker stop staging-container || true
-            docker rm staging-container || true
-            docker run -d --name staging-container \
-              -e DB_HOST=$DB_HOST \
-              -e DB_PORT=$DB_PORT \
-              -e DB_USER=$DB_USER \
-              -e DB_PASSWORD=$DB_PASSWORD \
-              -e DB_NAME=$DB_NAME \
-              -p 80:8088 \
-              $DOCKER_USERNAME/apptest1:latest
-          EOF
+          - name: Deploy to Staging VM
+          run: |
+            sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
+              docker pull $DOCKER_USERNAME/apptest1:latest
+              docker stop staging-container || true
+              docker rm staging-container || true
+              docker run -d --name staging-container \
+                -e DB_HOST=$DB_HOST \
+                -e DB_PORT=$DB_PORT \
+                -e DB_USER=$DB_USER \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e DB_NAME=$DB_NAME \
+                -p 80:8088 \
+                $DOCKER_USERNAME/apptest1:latest
+            EOF
+        
