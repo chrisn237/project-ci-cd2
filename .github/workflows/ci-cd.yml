@@ -60,14 +60,11 @@ jobs:
           export LC_DB_USER=$DB_USER
           export LC_DB_PASSWORD=$DB_PASSWORD
           export LC_DB_NAME=$DB_NAME
+          export LC_DOCKER_USERNAME=$DOCKER_USERNAME
           
           # Envoi des variables avec SSH et exécution de commandes sur la VM
           sshpass -p "$STAGING_VM_PASSWORD" ssh \
-            -o SendEnv=LC_DB_HOST \
-            -o SendEnv=LC_DB_PORT \
-            -o SendEnv=LC_DB_USER \
-            -o SendEnv=LC_DB_PASSWORD \
-            -o SendEnv=LC_DB_NAME \
+            
             -o StrictHostKeyChecking=no \
             $STAGING_VM_USER@$STAGING_VM_IP << 'EOF'
             
@@ -76,11 +73,7 @@ jobs:
             docker stop staging-container || true
             docker rm staging-container || true
             docker run -d --name staging-container \
-              -e DB_HOST=$LC_DB_HOST \
-              -e DB_PORT=$LC_DB_PORT \
-              -e DB_USER=$LC_DB_USER \
-              -e DB_PASSWORD=$LC_DB_PASSWORD \
-              -e DB_NAME=$LC_DB_NAME \
+             
               -p 80:8088 \
               $DOCKER_USERNAME/apptest1:latest
           EOF
