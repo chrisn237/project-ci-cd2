@@ -34,3 +34,57 @@
 
   ```
 
+# Configuration
+
+  Configurer la base de données : project/db/resources/database.ini
+  Configuer le fichier VERSION : par exemple "1.0.0"
+  Configurer le fichier Changelog
+
+# Pipeline-cicd
+
+  Le pipeline comprend les étapes suivantes :
+
+  Build et tests :
+
+  Vérifie que les fichiers VERSION et Changelog.md ont été modifiés lors des commits sur la branche main.
+  Lit la version depuis le fichier VERSION.
+  Construit et pousse l'image Docker vers Docker Hub.
+  Déploiement en staging :
+
+  Déploie automatiquement la nouvelle version sur le serveur de staging lorsque des changements sont poussés sur main.
+  Déploiement en production :
+
+  Se déclenche lors de la création d'une nouvelle release sur GitHub.
+  Déploie la version spécifiée sur le serveur de production.
+  Variables et Secrets
+  Assurez-vous de configurer les secrets suivants dans votre dépôt GitHub :
+
+  DOCKER_USERNAME
+  DOCKER_PASSWORD
+  STAGING_VM_IP
+  STAGING_VM_USER
+  STAGING_VM_PASSWORD
+  PROD_VM_IP
+  PROD_VM_USER
+  PROD_VM_PASSWORD
+
+# Tests
+
+  Test fonctionnels: python -m unittest tests/functional_test.py
+
+  Test de performance: k6 run tests/performances.js
+
+# Déploiement
+
+ 
+  Environnement de staging:
+  Le déploiement en staging est automatique lors des push sur la branche main.
+
+  Environnement de production
+  Pour déployer en production :
+  Créez une nouvelle release sur GitHub.
+  Le pipeline CI/CD se chargera du déploiement sur le serveur de production.
+
+
+
+
