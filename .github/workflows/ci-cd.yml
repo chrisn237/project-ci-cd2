@@ -16,67 +16,50 @@ jobs:
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      STAGING_VM_IP: ${{ secrets.STAGING_VM_IP }}
-      STAGING_VM_USER: ${{ secrets.STAGING_VM_USER }}
-      STAGING_VM_PASSWORD: ${{ secrets.STAGING_VM_PASSWORD }}
 
     steps:
-      # Étape 1 : Checkout du code
+      # Étape 1 : Récupération du code source
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Étape 2 : Vérifier que VERSION et Changelog.md ont été modifiés (uniquement pour main)
-      - name: Check VERSION and Changelog.md
-        if: github.ref == 'refs/heads/main'
+      # Étape 2 : Vérifier les fichiers dans le workspace
+      - name: Debug workspace
         run: |
-          if ! git diff --exit-code HEAD^ HEAD VERSION Changelog.md; then
-            echo "VERSION et Changelog.md ont été modifiés, continue..."
-          else
-            echo "Erreur : Vous devez modifier VERSION et Changelog.md pour continuer."
+          echo "Fichiers présents dans le répertoire :"
+          ls -l
+
+      # Étape 3 : Lire et valider le fichier VERSION
+      - name: Get version from VERSION file
+        run: |
+          if [ ! -f VERSION ]; then
+            echo "Erreur : Le fichier VERSION est introuvable."
+            exit 1
+          fi
+          VERSION=$(cat VERSION | tr -d '\r\n" ')
+          if [ -z "$VERSION" ]; then
+            echo "Erreur : La variable VERSION est vide après nettoyage."
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # Étape 4 : Debug de la variable VERSION
+      - name: Debug VERSION
+        run: echo "VERSION: ${{ env.VERSION }}"
+
+      # Étape 5 : Validation de la variable VERSION
+      - name: Validate VERSION variable
+        run: |
+          if [ -z "${{ env.VERSION }}" ]; then
+            echo "Erreur : La variable VERSION est vide avant utilisation."
             exit 1
           fi
 
-      # Étape 3 : Lire la version depuis le fichier VERSION et définir la variable d'environnement
-      - name: Get version from VERSION file
-        run: |
-          VERSION=$(cat VERSION | tr -d '\r\n"')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      # Étape 4 : Déterminer le tag Docker
-      - name: Determine Docker tag
-        run: |
-          if [[ "${GITHUB_REF}" == refs/heads/feature/* ]]; then
-            DOCKER_TAG=$(git rev-parse --short HEAD)
-          else
-            DOCKER_TAG=$VERSION
-          fi
-          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
-
-      # Étape 5 : Configuration de la base de données
-      - name: Configure database.ini
-        run: |
-          sed -i "s/__DB_HOST__/$DB_HOST/g" project/db/resources/database.ini
-          sed -i "s/__DB_PORT__/$DB_PORT/g" project/db/resources/database.ini
-          sed -i "s/__DB_USER__/$DB_USER/g" project/db/resources/database.ini
-          sed -i "s/__DB_PASSWORD__/$DB_PASSWORD/g" project/db/resources/database.ini
-          sed -i "s/__DB_NAME__/$DB_NAME/g" project/db/resources/database.ini
-
-      # Étape 6 : Build et Push de l'image Docker
+      # Étape 6 : Construire et pousser l'image Docker
       - name: Build and Push Docker image
         run: |
-          docker build -t $DOCKER_USERNAME/apptest1:$DOCKER_TAG .
+          docker build -t $DOCKER_USERNAME/apptest1:${{ env.VERSION }} .
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-          docker push $DOCKER_USERNAME/apptest1:$DOCKER_TAG
-
-      # Étape 7 : Tests de performance avec K6 (commenté)
-      # - name: Run Performance Tests with K6
-      #   run: |
-      #     docker run -i grafana/k6 run - < tests/performances.js
-
-      # Étape 8 : Tests fonctionnels (commenté)
-      # - name: Run Functional Tests
-      #   run: |
-      #     python -m unittest tests/functional_test.py
+          docker push $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
 
   deploy_staging:
     if: github.ref == 'refs/heads/main'
@@ -89,27 +72,24 @@ jobs:
       STAGING_VM_IP: ${{ secrets.STAGING_VM_IP }}
       STAGING_VM_USER: ${{ secrets.STAGING_VM_USER }}
       STAGING_VM_PASSWORD: ${{ secrets.STAGING_VM_PASSWORD }}
-      VERSION: $VERSION
 
     steps:
       - name: Deploy to Staging VM
         run: |
           sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << EOF
+            echo "Déploiement en cours pour la version ${{ env.VERSION }}..."
+
             echo "Pulling Docker image..."
-            docker pull $DOCKER_USERNAME/apptest1:$VERSION
+            docker pull $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
 
             echo "Stopping and removing existing container..."
             docker stop staging-container || true
             docker rm staging-container || true
 
             echo "Running new container..."
-            if [ -z "$VERSION" ]; then
-              echo "Erreur : La variable VERSION est vide."
-              exit 1
-            fi
             docker run -d --name staging-container \
               -p 8088:8088 \
-              $DOCKER_USERNAME/apptest1:$VERSION
+              $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
           EOF
 
   deploy_production:
@@ -120,17 +100,18 @@ jobs:
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      PROD_VM_IP: ${{ secrets.STAGING_VM_IP }}
-      PROD_VM_USER: ${{ secrets.STAGING_VM_USER }}
-      PROD_VM_PASSWORD: ${{ secrets.STAGING_VM_PASSWORD }}
-      VERSION: $VERSION
+      PROD_VM_IP: ${{ secrets.PROD_VM_IP }}
+      PROD_VM_USER: ${{ secrets.PROD_VM_USER }}
+      PROD_VM_PASSWORD: ${{ secrets.PROD_VM_PASSWORD }}
 
     steps:
-      - name: Deploy to Production on Staging VM with different port
+      - name: Deploy to Production VM
         run: |
           sshpass -p "$PROD_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $PROD_VM_USER@$PROD_VM_IP << EOF
+            echo "Déploiement en cours pour la version ${{ env.VERSION }}..."
+
             echo "Pulling Docker image..."
-            docker pull $DOCKER_USERNAME/apptest1:$VERSION
+            docker pull $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
 
             echo "Stopping and removing existing container..."
             docker stop production-container || true
@@ -139,5 +120,5 @@ jobs:
             echo "Running new container..."
             docker run -d --name production-container \
               -p 8089:8088 \
-              $DOCKER_USERNAME/apptest1:$VERSION
+              $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
           EOF
