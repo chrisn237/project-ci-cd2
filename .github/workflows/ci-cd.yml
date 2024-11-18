@@ -75,7 +75,7 @@ jobs:
 
       # Étape 8 : Analyse de sécurité avec Trivy
       - name: Run Security Scan with Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action
         with:
           image-ref: $DOCKER_USERNAME/apptest1:$DOCKER_TAG
 
