@@ -69,9 +69,9 @@ jobs:
           docker push $DOCKER_USERNAME/apptest1:$DOCKER_TAG
 
       # Étape 7 : Tests de performance avec K6
-      - name: Run Performance Tests with K6
+      - name: Run Performances Tests with K6
         run: |
-          docker run -i grafana/k6 run - < tests/performance.js
+          docker run -i grafana/k6 run - < tests/performances.js
 
       # Étape 8 : Analyse de sécurité avec Trivy
       - name: Run Security Scan with Trivy
@@ -82,7 +82,7 @@ jobs:
       # Étape 9 : Tests fonctionnels
       - name: Run Functional Tests
         run: |
-          python -m unittest tests/functional_tests.py
+          python -m unittest tests/functional_test.py
 
   deploy_staging:
     if: github.ref == 'refs/heads/main'
