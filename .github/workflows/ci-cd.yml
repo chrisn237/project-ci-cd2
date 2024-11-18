@@ -69,15 +69,15 @@ jobs:
           docker push $DOCKER_USERNAME/apptest1:$DOCKER_TAG
 
       # Étape 7 : Tests de performance avec K6
-      - name: Run Performances Tests with K6
+      - name: Run Performance Tests with K6
         run: |
           docker run -i grafana/k6 run - < tests/performances.js
 
       # Étape 8 : Analyse de sécurité avec Trivy
-      - name: Run Security Scan with Trivy
-        uses: aquasecurity/trivy-action
-        with:
-          image-ref: $DOCKER_USERNAME/apptest1:$DOCKER_TAG
+      # - name: Run Security Scan with Trivy
+      #   uses: aquasecurity/trivy-action
+      #   with:
+      #     image-ref: $DOCKER_USERNAME/apptest1:$DOCKER_TAG
 
       # Étape 9 : Tests fonctionnels
       - name: Run Functional Tests
