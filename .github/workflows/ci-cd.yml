@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline for Staging and Production
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
       # Étape 3 : Lire la version depuis le fichier VERSION et définir la variable d'environnement
       - name: Get version from VERSION file
         run: |
-          VERSION=$(cat VERSION)
+          VERSION=$(cat VERSION | tr -d '\r\n')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       # Étape 4 : Déterminer le tag Docker
