@@ -44,7 +44,7 @@ jobs:
 
       # Étape 4 : Debug de la variable VERSION
       - name: Debug VERSION
-        run: echo "VERSION: ${{ env.VERSION }}"
+        run: echo VERSION=${{ env.VERSION }}
 
       # Étape 5 : Validation de la variable VERSION
       - name: Validate VERSION variable
