@@ -12,6 +12,8 @@ on:
 jobs:
   build_test_publish:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
 
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -38,6 +40,7 @@ jobs:
 
       # Étape 3 : Lire la version depuis le fichier VERSION et définir la variable d'environnement
       - name: Get version from VERSION file
+        id: set_version
         run: |
           if [ ! -f VERSION ]; then
             echo "Erreur : Le fichier VERSION est introuvable."
@@ -49,6 +52,7 @@ jobs:
             exit 1
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       # Étape 4 : Déterminer le tag Docker
       - name: Determine Docker tag
@@ -92,6 +96,7 @@ jobs:
     needs: build_test_publish
 
     env:
+      VERSION: ${{ needs.build_test_publish.outputs.version }}
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       STAGING_VM_IP: ${{ secrets.STAGING_VM_IP }}
@@ -101,13 +106,13 @@ jobs:
     steps:
       - name: Deploy to Staging VM
         run: |
-          if [ -z "${{ env.VERSION }}" ]; then
+          if [ -z "${VERSION}" ]; then
             echo "Erreur : La variable VERSION est vide avant le déploiement."
             exit 1
           fi
           sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << EOF
             echo "Pulling Docker image..."
-            docker pull $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
+            docker pull $DOCKER_USERNAME/apptest1:${VERSION}
 
             echo "Stopping and removing existing container..."
             docker stop staging-container || true
@@ -116,7 +121,7 @@ jobs:
             echo "Running new container..."
             docker run -d --name staging-container \
               -p 8088:8088 \
-              $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
+              $DOCKER_USERNAME/apptest1:${VERSION}
           EOF
 
   deploy_production:
@@ -125,22 +130,23 @@ jobs:
     needs: deploy_staging
 
     env:
+      VERSION: ${{ needs.build_test_publish.outputs.version }}
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      PROD_VM_IP: ${{ secrets.STAGING_VM_IP }}
-      PROD_VM_USER: ${{ secrets.STAGING_VM_USER }}
-      PROD_VM_PASSWORD: ${{ secrets.STAGING_VM_PASSWORD }}
+      PROD_VM_IP: ${{ secrets.PROD_VM_IP }}
+      PROD_VM_USER: ${{ secrets.PROD_VM_USER }}
+      PROD_VM_PASSWORD: ${{ secrets.PROD_VM_PASSWORD }}
 
     steps:
-      - name: Deploy to Production on Staging VM with different port
+      - name: Deploy to Production on Production VM
         run: |
-          if [ -z "${{ env.VERSION }}" ]; then
+          if [ -z "${VERSION}" ]; then
             echo "Erreur : La variable VERSION est vide avant le déploiement en production."
             exit 1
           fi
           sshpass -p "$PROD_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $PROD_VM_USER@$PROD_VM_IP << EOF
             echo "Pulling Docker image..."
-            docker pull $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
+            docker pull $DOCKER_USERNAME/apptest1:${VERSION}
 
             echo "Stopping and removing existing container..."
             docker stop production-container || true
@@ -149,5 +155,5 @@ jobs:
             echo "Running new container..."
             docker run -d --name production-container \
               -p 8089:8088 \
-              $DOCKER_USERNAME/apptest1:${{ env.VERSION }}
+              $DOCKER_USERNAME/apptest1:${VERSION}
           EOF
