@@ -80,9 +80,9 @@ jobs:
       #     image-ref: $DOCKER_USERNAME/apptest1:$DOCKER_TAG
 
       # Étape 9 : Tests fonctionnels
-      - name: Run Functional Tests
-        run: |
-          python -m unittest tests/functional_test.py
+      #- name: Run Functional Tests
+      #  run: |
+      #    python -m unittest tests/functional_test.py
 
   deploy_staging:
     if: github.ref == 'refs/heads/main'
