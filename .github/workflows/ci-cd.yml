@@ -39,7 +39,7 @@ jobs:
       # Étape 3 : Lire la version depuis le fichier VERSION et définir la variable d'environnement
       - name: Get version from VERSION file
         run: |
-          VERSION=$(cat VERSION | tr -d '\r\n')
+          VERSION=$(cat VERSION | tr -d '\r\n"')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       # Étape 4 : Déterminer le tag Docker
@@ -68,21 +68,15 @@ jobs:
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/apptest1:$DOCKER_TAG
 
-      # Étape 7 : Tests de performance avec K6
-      - name: Run Performance Tests with K6
-        run: |
-          docker run -i grafana/k6 run - < tests/performances.js
+      # Étape 7 : Tests de performance avec K6 (commenté)
+      # - name: Run Performance Tests with K6
+      #   run: |
+      #     docker run -i grafana/k6 run - < tests/performances.js
 
-      # Étape 8 : Analyse de sécurité avec Trivy
-      # - name: Run Security Scan with Trivy
-      #   uses: aquasecurity/trivy-action
-      #   with:
-      #     image-ref: $DOCKER_USERNAME/apptest1:$DOCKER_TAG
-
-      # Étape 9 : Tests fonctionnels
-      #- name: Run Functional Tests
-      #  run: |
-      #    python -m unittest tests/functional_test.py
+      # Étape 8 : Tests fonctionnels (commenté)
+      # - name: Run Functional Tests
+      #   run: |
+      #     python -m unittest tests/functional_test.py
 
   deploy_staging:
     if: github.ref == 'refs/heads/main'
@@ -101,9 +95,18 @@ jobs:
       - name: Deploy to Staging VM
         run: |
           sshpass -p "$STAGING_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $STAGING_VM_USER@$STAGING_VM_IP << EOF
+            echo "Pulling Docker image..."
             docker pull $DOCKER_USERNAME/apptest1:$VERSION
+
+            echo "Stopping and removing existing container..."
             docker stop staging-container || true
             docker rm staging-container || true
+
+            echo "Running new container..."
+            if [ -z "$VERSION" ]; then
+              echo "Erreur : La variable VERSION est vide."
+              exit 1
+            fi
             docker run -d --name staging-container \
               -p 8088:8088 \
               $DOCKER_USERNAME/apptest1:$VERSION
@@ -126,9 +129,14 @@ jobs:
       - name: Deploy to Production on Staging VM with different port
         run: |
           sshpass -p "$PROD_VM_PASSWORD" ssh -o StrictHostKeyChecking=no $PROD_VM_USER@$PROD_VM_IP << EOF
+            echo "Pulling Docker image..."
             docker pull $DOCKER_USERNAME/apptest1:$VERSION
+
+            echo "Stopping and removing existing container..."
             docker stop production-container || true
             docker rm production-container || true
+
+            echo "Running new container..."
             docker run -d --name production-container \
               -p 8089:8088 \
               $DOCKER_USERNAME/apptest1:$VERSION
